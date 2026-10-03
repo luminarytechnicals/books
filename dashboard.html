@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Author Dashboard — Luminay Technicals</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+/* DASHBOARD LAYOUT */
+.dash-layout { display:flex; min-height:100vh; }
+
+/* UPLOAD AREA */
+.upload-zone {
+  border:2px dashed var(--gold-line); border-radius:var(--radius-lg);
+  padding:40px; text-align:center; cursor:pointer; transition:all 0.2s;
+  background:var(--bg3); position:relative;
+}
+.upload-zone:hover, .upload-zone.drag { border-color:var(--gold); background:var(--gold-dim); }
+.upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.upload-icon { font-size:2.4rem; margin-bottom:10px; }
+.upload-text { font-size:14px; font-weight:600; margin-bottom:4px; }
+.upload-sub { font-size:12px; color:var(--text3); }
+.upload-file-name { font-size:13px; color:var(--green); margin-top:8px; font-weight:600; }
+
+/* BOOK CARDS */
+.books-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.book-card {
+  background:var(--bg2); border:1px solid var(--gold-line);
+  border-radius:var(--radius-lg); padding:20px; transition:all 0.3s;
+}
+.book-card:hover { border-color:rgba(200,168,75,0.35); transform:translateY(-2px); }
+.book-cover {
+  width:100%; aspect-ratio:3/4; background:linear-gradient(135deg,var(--bg3),var(--bg4));
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-size:2.5rem; margin-bottom:14px; border:1px solid rgba(255,255,255,0.06);
+  position:relative; overflow:hidden;
+}
+.book-cover-gradient {
+  position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(200,168,75,0.08),transparent);
+}
+.book-id { font-size:10px; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+.book-title { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-weight:700; margin-bottom:4px; line-height:1.2; }
+.book-genre { font-size:12px; color:var(--text3); margin-bottom:10px; }
+.book-meta { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+.book-platform { font-size:11px; color:var(--text2); }
+.book-actions { display:flex; gap:6px; margin-top:12px; }
+
+/* PLAN CARD */
+.current-plan-card {
+  background:linear-gradient(135deg,rgba(200,168,75,0.08),var(--bg2));
+  border:1px solid var(--gold); border-radius:var(--radius-lg); padding:24px;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
+}
+.plan-info-left h3 { font-size:1.4rem; margin-bottom:4px; }
+.plan-info-left p { color:var(--text2); font-size:13px; }
+.plan-price-display { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:700; color:var(--gold); }
+.plan-price-display span { font-size:13px; color:var(--text3); font-family:'Syne',sans-serif; }
+
+/* NOTIFICATIONS */
+.notif-dot {
+  width:8px; height:8px; background:var(--red); border-radius:50%;
+  position:absolute; top:4px; right:4px;
+}
+
+/* PROGRESS */
+.progress-bar { height:4px; background:rgba(255,255,255,0.06); border-radius:50px; overflow:hidden; margin-top:8px; }
+.progress-fill { height:100%; background:var(--gold); border-radius:50px; transition:width 0.5s ease; }
+
+/* ROYALTY ROW */
+.royalty-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+
+@media(max-width:768px){
+  .royalty-row{ grid-template-columns:1fr 1fr; }
+  .current-plan-card{ flex-direction:column; align-items:flex-start; }
+}
+@media(max-width:480px){
+  .royalty-row{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="dash-layout">
+
+<!-- SIDEBAR -->
+<aside class="lt-sidebar" id="sidebar">
+  <div class="lt-sidebar-logo">
+    <div class="lt-sidebar-logo-mark">L</div>
+    <div class="lt-sidebar-logo-name">Luminay Books</div>
+    <div class="lt-sidebar-logo-sub" id="sidebarUserName">Author Portal</div>
+  </div>
+  <nav class="lt-sidebar-nav">
+    <div class="lt-sidebar-section">Main</div>
+    <button class="lt-nav-item active" onclick="showPage('overview')"><span class="nav-icon">🏠</span> Overview</button>
+    <button class="lt-nav-item" onclick="showPage('mybooks')"><span class="nav-icon">📚</span> My Books</button>
+    <button class="lt-nav-item" onclick="showPage('upload')"><span class="nav-icon">⬆️</span> Submit Book</button>
+    <div class="lt-sidebar-section" style="margin-top:12px">Account</div>
+    <button class="lt-nav-item" onclick="showPage('plan')"><span class="nav-icon">💳</span> Plan & Billing</button>
+    <button class="lt-nav-item" onclick="showPage('royalties')"><span class="nav-icon">💰</span> Royalties</button>
+    <button class="lt-nav-item" onclick="showPage('profile')"><span class="nav-icon">👤</span> Profile</button>
+  </nav>
+  <div class="lt-sidebar-footer">
+    <button class="lt-btn lt-btn-ghost lt-btn-sm" style="width:100%;justify-content:center" onclick="logout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="lt-main">
+  <!-- TOPBAR -->
+  <div class="lt-topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="toggleSidebar()" style="display:none;padding:8px" id="menuBtn">☰</button>
+      <span id="topbarTitle" style="font-weight:700;font-size:14px">Overview</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="position:relative">
+        <button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="showPage('mybooks')">📚 My Books</button>
+      </div>
+      <div style="width:32px;height:32px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#07080f" id="topbarAvatar">A</div>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <div class="lt-page">
+
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview">
+      <h1 class="lt-page-title" id="overviewGreet">Good morning, Author</h1>
+      <p class="lt-page-sub">Here's your publishing overview</p>
+      <div class="lt-grid-4" style="margin-bottom:24px">
+        <div class="lt-stat-card"><div class="lt-stat-label">My Books</div><div class="lt-stat-num" id="statBooks">0</div><div class="lt-stat-change">↑ All time</div></div>
+        <div class="lt-stat-card"><div class="lt-stat-label">Live Books</div><div class="lt-stat-num" id="statLive">0</div><div class="lt-stat-change" style="color:var(--green)">✓ Published</div></div>
+        <div class="lt-stat-card"><div class="lt-stat-label">In Review</div><div class="lt-stat-num" id="statReview">0</div><div class="lt-stat-change" style="color:var(--blue)">⏳ Processing</div></div>
+        <div class="lt-stat-card"><div class="lt-stat-label">Est. Royalties</div><div class="lt-stat-num" id="statRoyalty">₹0</div><div class="lt-stat-change">This month</div></div>
+      </div>
+      <div class="lt-grid-2" style="gap:20px">
+        <div>
+          <h3 style="font-size:1.1rem;margin-bottom:14px">Recent Books</h3>
+          <div id="recentBooks" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div>
+          <h3 style="font-size:1.1rem;margin-bottom:14px">Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="lt-btn lt-btn-gold" style="justify-content:flex-start;gap:12px" onclick="showPage('upload')">⬆️ Submit a New Book</button>
+            <button class="lt-btn lt-btn-outline" style="justify-content:flex-start;gap:12px" onclick="showPage('plan')">💳 Manage Plan</button>
+            <button class="lt-btn lt-btn-ghost" style="justify-content:flex-start;gap:12px" onclick="showPage('royalties')">💰 View Royalties</button>
+            <a href="index.html" class="lt-btn lt-btn-ghost" style="justify-content:flex-start;gap:12px">🌍 View Public Site</a>
+          </div>
+          <div style="margin-top:20px;padding:16px;background:var(--gold-dim);border:1px solid var(--gold-line);border-radius:var(--radius)">
+            <p style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:4px">📧 Support</p>
+            <p style="font-size:12px;color:var(--text2)">luminarytechnicals@gmail.com</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY BOOKS PAGE -->
+    <div id="page-mybooks" style="display:none">
+      <h1 class="lt-page-title">My Books</h1>
+      <p class="lt-page-sub">All your submitted and published books</p>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="lt-btn lt-btn-gold lt-btn-sm" onclick="showPage('upload')">+ Submit New Book</button>
+        <select class="lt-select" style="width:auto;padding:7px 14px;font-size:12px" onchange="filterBooks(this.value)">
+          <option value="all">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="pending">Pending</option>
+          <option value="review">In Review</option>
+          <option value="live">Live</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="books-grid" id="booksGrid"></div>
+      <div id="noBooksMsg" style="text-align:center;padding:60px;color:var(--text3);display:none">
+        <div style="font-size:3rem;margin-bottom:16px">📚</div>
+        <p style="font-size:15px;margin-bottom:16px">No books submitted yet</p>
+        <button class="lt-btn lt-btn-gold" onclick="showPage('upload')">Submit Your First Book</button>
+      </div>
+    </div>
+
+    <!-- SUBMIT BOOK PAGE -->
+    <div id="page-upload" style="display:none">
+      <h1 class="lt-page-title">Submit a Book</h1>
+      <p class="lt-page-sub">Fill in the details and upload your manuscript</p>
+      <div style="max-width:680px">
+        <div class="lt-card" style="margin-bottom:20px">
+          <h3 style="font-size:1.1rem;margin-bottom:18px">📖 Book Details</h3>
+          <div class="lt-grid-2" style="gap:14px;margin-bottom:14px">
+            <div>
+              <label class="lt-label">Book Title *</label>
+              <input class="lt-input" type="text" id="bookTitle" placeholder="My Amazing Book"/>
+            </div>
+            <div>
+              <label class="lt-label">Genre *</label>
+              <select class="lt-select" id="bookGenre">
+                <option value="">Select genre…</option>
+                <option>Fiction</option><option>Non-Fiction</option>
+                <option>Romance</option><option>Mystery / Thriller</option>
+                <option>Self-Help</option><option>Biography</option>
+                <option>Science Fiction</option><option>Fantasy</option>
+                <option>Poetry</option><option>Children's</option>
+                <option>Educational</option><option>Business</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="lt-label">Book Description *</label>
+            <textarea class="lt-input" id="bookDesc" rows="4" placeholder="Describe your book in 2–3 sentences…" style="resize:vertical"></textarea>
+          </div>
+          <div class="lt-grid-2" style="gap:14px">
+            <div>
+              <label class="lt-label">Author Name (on book)</label>
+              <input class="lt-input" type="text" id="bookAuthor" placeholder="Your pen name or real name"/>
+            </div>
+            <div>
+              <label class="lt-label">Language</label>
+              <select class="lt-select" id="bookLang">
+                <option>English</option><option>Hindi</option>
+                <option>Bengali</option><option>Tamil</option>
+                <option>Telugu</option><option>Marathi</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="lt-card" style="margin-bottom:20px">
+          <h3 style="font-size:1.1rem;margin-bottom:18px">📁 Upload Manuscript</h3>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" accept=".pdf,.docx,.doc,.txt,.epub" id="manuscriptFile" onchange="handleFileSelect(this)"/>
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop your manuscript here or click to browse</div>
+            <div class="upload-sub">Supports PDF, DOCX, DOC, TXT, EPUB · Max 50MB</div>
+            <div class="upload-file-name" id="fileNameDisplay"></div>
+          </div>
+        </div>
+
+        <div class="lt-card" style="margin-bottom:20px">
+          <h3 style="font-size:1.1rem;margin-bottom:18px">🚀 Publishing Platform</h3>
+          <div id="publishPlatformSelect" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+        </div>
+
+        <div id="uploadError" class="auth-error" style="display:none;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.2);color:var(--red);font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:12px"></div>
+        <div id="uploadSuccess" class="auth-success" style="display:none;background:rgba(78,201,138,0.1);border:1px solid rgba(78,201,138,0.2);color:var(--green);font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:12px"></div>
+
+        <div style="display:flex;gap:10px">
+          <button class="lt-btn lt-btn-gold" onclick="submitBook()">Submit Book for Review</button>
+          <button class="lt-btn lt-btn-ghost" onclick="saveDraft()">Save as Draft</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAN & BILLING PAGE -->
+    <div id="page-plan" style="display:none">
+      <h1 class="lt-page-title">Plan & Billing</h1>
+      <p class="lt-page-sub">Manage your publishing plan</p>
+      <div class="current-plan-card" style="margin-bottom:28px">
+        <div class="plan-info-left">
+          <div style="font-size:10px;letter-spacing:0.14em;color:var(--gold);text-transform:uppercase;font-weight:700;margin-bottom:6px">Current Plan</div>
+          <h3 id="currentPlanName">—</h3>
+          <p id="currentPlanDesc">Loading…</p>
+        </div>
+        <div style="text-align:right">
+          <div class="plan-price-display">₹<span id="currentPlanPrice">—</span><span>/mo</span></div>
+          <div style="font-size:11px;color:var(--green);margin-top:4px">✓ Active</div>
+        </div>
+      </div>
+      <h3 style="font-size:1.1rem;margin-bottom:16px">Upgrade Plan</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px" id="upgradePlans"></div>
+    </div>
+
+    <!-- ROYALTIES PAGE -->
+    <div id="page-royalties" style="display:none">
+      <h1 class="lt-page-title">Royalties</h1>
+      <p class="lt-page-sub">Estimated earnings from your published books</p>
+      <div class="royalty-row" style="margin-bottom:24px">
+        <div class="lt-stat-card"><div class="lt-stat-label">Total Earned</div><div class="lt-stat-num">₹0</div><div class="lt-stat-change">All time</div></div>
+        <div class="lt-stat-card"><div class="lt-stat-label">This Month</div><div class="lt-stat-num">₹0</div><div class="lt-stat-change" style="color:var(--green)">No books live yet</div></div>
+        <div class="lt-stat-card"><div class="lt-stat-label">Pending</div><div class="lt-stat-num">₹0</div><div class="lt-stat-change">Next payout</div></div>
+      </div>
+      <div class="lt-card" style="text-align:center;padding:48px">
+        <div style="font-size:2.5rem;margin-bottom:16px">💰</div>
+        <p style="font-size:15px;font-weight:600;margin-bottom:8px">No royalty data yet</p>
+        <p style="color:var(--text2);font-size:13px;margin-bottom:20px">Once your books go live on Amazon or Google Play, your earnings will appear here.</p>
+        <button class="lt-btn lt-btn-gold" onclick="showPage('upload')">Submit a Book</button>
+      </div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div id="page-profile" style="display:none">
+      <h1 class="lt-page-title">Profile</h1>
+      <p class="lt-page-sub">Your author account details</p>
+      <div style="max-width:500px">
+        <div class="lt-card" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
+            <div style="width:64px;height:64px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#07080f" id="profileAvatar">A</div>
+            <div>
+              <div style="font-size:1.2rem;font-weight:700" id="profileName">—</div>
+              <div style="font-size:12px;color:var(--gold)" id="profileId">LT-AUTH-0000</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:10px">
+            <div><label class="lt-label">Full Name</label><input class="lt-input" id="profileFullName" placeholder="Your name"/></div>
+            <div><label class="lt-label">Email</label><input class="lt-input" id="profileEmail" type="email" placeholder="Email"/></div>
+            <div><label class="lt-label">Phone</label><input class="lt-input" id="profilePhone" placeholder="Phone"/></div>
+          </div>
+          <div style="margin-top:16px">
+            <button class="lt-btn lt-btn-gold lt-btn-sm" onclick="saveProfile()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /lt-page -->
+</div><!-- /lt-main -->
+</div><!-- /dash-layout -->
+
+<script src="config.js"></script>
+<script>
+// ── STATE
+let currentUser = null;
+let allBooks = [];
+
+// ── INIT
+function init() {
+  const stored = localStorage.getItem('lt_current_user');
+  if (!stored) return window.location.href = 'auth.html';
+  currentUser = JSON.parse(stored);
+  allBooks = JSON.parse(localStorage.getItem(`lt_books_${currentUser.id}`) || '[]');
+
+  // Populate UI
+  document.getElementById('sidebarUserName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+  document.getElementById('topbarAvatar').textContent = currentUser.firstName[0].toUpperCase();
+  document.getElementById('profileAvatar').textContent = currentUser.firstName[0].toUpperCase();
+  document.getElementById('profileName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+  document.getElementById('profileId').textContent = currentUser.id;
+  document.getElementById('profileFullName').value = `${currentUser.firstName} ${currentUser.lastName}`;
+  document.getElementById('profileEmail').value = currentUser.email;
+  document.getElementById('profilePhone').value = currentUser.phone || '';
+
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('overviewGreet').textContent = `${greet}, ${currentUser.firstName} 👋`;
+
+  loadPlanInfo();
+  renderUploadPlatforms();
+  renderStats();
+  renderBooks();
+  renderRecentBooks();
+
+  // Responsive menu btn
+  if (window.innerWidth <= 900) document.getElementById('menuBtn').style.display = 'flex';
+}
+
+function saveBooks() {
+  localStorage.setItem(`lt_books_${currentUser.id}`, JSON.stringify(allBooks));
+  // Also push to admin pool
+  const adminBooks = JSON.parse(localStorage.getItem('lt_admin_books') || '[]');
+  allBooks.forEach(b => {
+    const idx = adminBooks.findIndex(ab => ab.id === b.id);
+    if (idx >= 0) adminBooks[idx] = b; else adminBooks.push(b);
+  });
+  localStorage.setItem('lt_admin_books', JSON.stringify(adminBooks));
+}
+
+// ── NAVIGATION
+function showPage(page) {
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+  document.getElementById(`page-${page}`).style.display = 'block';
+  document.querySelectorAll('.lt-nav-item').forEach(el => el.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  const titles = { overview:'Overview', mybooks:'My Books', upload:'Submit Book', plan:'Plan & Billing', royalties:'Royalties', profile:'Profile' };
+  document.getElementById('topbarTitle').textContent = titles[page] || page;
+  if (page === 'mybooks') renderBooks();
+  if (page === 'plan') loadPlanInfo();
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function logout() {
+  localStorage.removeItem('lt_current_user');
+  window.location.href = 'auth.html';
+}
+
+// ── STATS
+function renderStats() {
+  const live    = allBooks.filter(b => b.status === 'live').length;
+  const review  = allBooks.filter(b => b.status === 'review' || b.status === 'pending').length;
+  document.getElementById('statBooks').textContent  = allBooks.length;
+  document.getElementById('statLive').textContent   = live;
+  document.getElementById('statReview').textContent = review;
+  document.getElementById('statRoyalty').textContent = '₹0';
+}
+
+// ── BOOKS
+function renderBooks(filter = 'all') {
+  const filtered = filter === 'all' ? allBooks : allBooks.filter(b => b.status === filter);
+  const grid = document.getElementById('booksGrid');
+  const noMsg = document.getElementById('noBooksMsg');
+  if (!filtered.length) { grid.innerHTML = ''; noMsg.style.display = 'block'; return; }
+  noMsg.style.display = 'none';
+  grid.innerHTML = filtered.map(b => `
+    <div class="book-card">
+      <div class="book-cover"><div class="book-cover-gradient"></div>📖</div>
+      <div class="book-id">${b.id}</div>
+      <div class="book-title">${b.title}</div>
+      <div class="book-genre">${b.genre} · ${b.language}</div>
+      <div class="book-meta">
+        <span class="lt-status lt-status-${b.status}">${b.status}</span>
+        <span style="font-size:11px;color:var(--text3)">${new Date(b.createdAt).toLocaleDateString('en-IN')}</span>
+      </div>
+      <div class="book-actions">
+        <button class="lt-btn lt-btn-ghost lt-btn-sm" style="flex:1" onclick="viewBook('${b.id}')">View</button>
+        ${b.status === 'draft' ? `<button class="lt-btn lt-btn-gold lt-btn-sm" style="flex:1" onclick="submitExisting('${b.id}')">Submit</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+function filterBooks(val) { renderBooks(val); }
+
+function renderRecentBooks() {
+  const recent = [...allBooks].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0,3);
+  const el = document.getElementById('recentBooks');
+  if (!recent.length) {
+    el.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:16px;background:var(--bg2);border:1px solid var(--gold-line);border-radius:var(--radius);text-align:center">No books yet. <button onclick="showPage('upload')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-weight:600">Submit your first →</button></div>`;
+    return;
+  }
+  el.innerHTML = recent.map(b => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border:1px solid var(--gold-line);border-radius:var(--radius)">
+      <div style="width:36px;height:36px;background:var(--bg3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📖</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
+        <div style="font-size:11px;color:var(--text3)">${b.genre}</div>
+      </div>
+      <span class="lt-status lt-status-${b.status}">${b.status}</span>
+    </div>
+  `).join('');
+}
+
+function viewBook(id) {
+  const b = allBooks.find(x => x.id === id);
+  if (!b) return;
+  alert(`📖 ${b.title}\n\nID: ${b.id}\nStatus: ${b.status}\nPlatform: ${b.platform}\nGenre: ${b.genre}\nSubmitted: ${new Date(b.createdAt).toLocaleDateString('en-IN')}`);
+}
+function submitExisting(id) {
+  const b = allBooks.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'pending';
+  saveBooks(); renderBooks(); renderStats();
+  showToast('Book submitted for review!', 'success');
+}
+
+// ── UPLOAD
+let selectedPlatformUpload = '';
+function renderUploadPlatforms() {
+  const plan = LT_CONFIG.plans.find(p => p.id === currentUser.plan) || LT_CONFIG.plans[0];
+  document.getElementById('publishPlatformSelect').innerHTML = plan.platforms.map((p,i) => `
+    <div class="plan-opt ${i===0?'selected':''}" onclick="selectUploadPlatform('${p}',this)" style="cursor:pointer;background:var(--bg3);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px;text-align:center;transition:all 0.2s">
+      <div style="font-size:1.2rem">${getPlatformIcon(p)}</div>
+      <div style="font-size:12px;font-weight:700;margin-top:6px">${p}</div>
+    </div>
+  `).join('');
+  selectedPlatformUpload = plan.platforms[0] || '';
+}
+function selectUploadPlatform(p, el) {
+  selectedPlatformUpload = p;
+  document.querySelectorAll('#publishPlatformSelect .plan-opt').forEach(e => {
+    e.style.borderColor = 'rgba(255,255,255,0.06)';
+    e.style.background = 'var(--bg3)';
+  });
+  el.style.borderColor = 'var(--gold)';
+  el.style.background = 'var(--gold-dim)';
+}
+function getPlatformIcon(p) {
+  if (p.includes('Kindle')||p.includes('Amazon')) return '📱';
+  if (p.includes('Google')) return '🎵';
+  if (p.includes('Print')||p.includes('Hard')) return '📦';
+  return '📄';
+}
+function handleFileSelect(input) {
+  const f = input.files[0];
+  document.getElementById('fileNameDisplay').textContent = f ? `✓ ${f.name}` : '';
+}
+
+function submitBook(asDraft = false) {
+  const title  = document.getElementById('bookTitle').value.trim();
+  const genre  = document.getElementById('bookGenre').value;
+  const desc   = document.getElementById('bookDesc').value.trim();
+  const author = document.getElementById('bookAuthor').value.trim() || `${currentUser.firstName} ${currentUser.lastName}`;
+  const lang   = document.getElementById('bookLang').value;
+  const fileEl = document.getElementById('manuscriptFile');
+
+  if (!asDraft) {
+    if (!title) return showUploadMsg('Please enter a book title.', 'error');
+    if (!genre) return showUploadMsg('Please select a genre.', 'error');
+    if (!desc)  return showUploadMsg('Please add a description.', 'error');
+    if (!fileEl.files.length) return showUploadMsg('Please upload a manuscript file.', 'error');
+  }
+
+  const bookNum = (JSON.parse(localStorage.getItem('lt_book_counter') || '0')) + 1;
+  localStorage.setItem('lt_book_counter', bookNum);
+
+  const book = {
+    id: `LT-BOOK-${String(bookNum).padStart(4,'0')}`,
+    authorId: currentUser.id,
+    authorName: author,
+    title: title || 'Untitled Draft',
+    genre, desc, language: lang,
+    platform: selectedPlatformUpload,
+    fileName: fileEl.files[0]?.name || '',
+    status: asDraft ? 'draft' : 'pending',
+    createdAt: new Date().toISOString(),
+    isbn: `ISBN-${Date.now()}`,
+  };
+  allBooks.push(book);
+  saveBooks(); renderStats(); renderRecentBooks();
+  showUploadMsg(asDraft ? 'Draft saved!' : 'Book submitted for review! We\'ll email you updates.', 'success');
+  setTimeout(() => { if (!asDraft) showPage('mybooks'); }, 1500);
+
+  // Reset form
+  document.getElementById('bookTitle').value = '';
+  document.getElementById('bookGenre').value = '';
+  document.getElementById('bookDesc').value = '';
+  document.getElementById('bookAuthor').value = '';
+  document.getElementById('fileNameDisplay').textContent = '';
+  fileEl.value = '';
+}
+function saveDraft() { submitBook(true); }
+function showUploadMsg(msg, type) {
+  const id = type === 'error' ? 'uploadError' : 'uploadSuccess';
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ── PLAN
+function loadPlanInfo() {
+  const plan = LT_CONFIG.plans.find(p => p.id === currentUser.plan) || LT_CONFIG.plans[0];
+  document.getElementById('currentPlanName').textContent  = plan.name;
+  document.getElementById('currentPlanDesc').textContent  = plan.platforms.join(' · ');
+  document.getElementById('currentPlanPrice').textContent = plan.price;
+  document.getElementById('upgradePlans').innerHTML = LT_CONFIG.plans.map(p => `
+    <div style="background:var(--bg2);border:1px solid ${p.id===currentUser.plan?'var(--gold)':'var(--gold-line)'};border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:1.3rem">${p.icon}</div>
+      <div style="font-weight:700">${p.name}</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold)">₹${p.price}<span style="font-size:11px;color:var(--text3);font-family:'Syne',sans-serif">/mo</span></div>
+      <div style="font-size:11px;color:var(--text2)">${p.features.slice(0,2).join(' · ')}</div>
+      ${p.id === currentUser.plan
+        ? `<div class="lt-btn lt-btn-ghost lt-btn-sm" style="margin-top:8px;text-align:center;pointer-events:none">✓ Current</div>`
+        : `<button class="lt-btn lt-btn-outline lt-btn-sm" style="margin-top:8px" onclick="changePlan('${p.id}')">Switch</button>`}
+    </div>
+  `).join('');
+}
+function changePlan(id) {
+  currentUser.plan = id;
+  const users = JSON.parse(localStorage.getItem('lt_users') || '[]');
+  const idx = users.findIndex(u => u.id === currentUser.id);
+  if (idx >= 0) users[idx] = currentUser;
+  localStorage.setItem('lt_users', JSON.stringify(users));
+  localStorage.setItem('lt_current_user', JSON.stringify(currentUser));
+  loadPlanInfo(); renderUploadPlatforms();
+  const plan = LT_CONFIG.plans.find(p => p.id === id);
+  showToast(`Switched to ${plan.name} plan!`, 'success');
+}
+
+// ── PROFILE SAVE
+function saveProfile() {
+  const full = document.getElementById('profileFullName').value.trim().split(' ');
+  currentUser.firstName = full[0] || currentUser.firstName;
+  currentUser.lastName  = full.slice(1).join(' ') || currentUser.lastName;
+  currentUser.phone     = document.getElementById('profilePhone').value.trim();
+  localStorage.setItem('lt_current_user', JSON.stringify(currentUser));
+  showToast('Profile saved!', 'success');
+}
+
+// ── TOAST
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `lt-toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':'✕'}</span> ${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+init();
+</script>
+</body>
+</html>

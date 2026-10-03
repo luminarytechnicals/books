@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Panel — Luminay Technicals</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+.admin-login {
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:var(--bg);
+}
+.admin-login-box {
+  background:var(--bg2); border:1px solid var(--gold-line);
+  border-radius:var(--radius-lg); padding:40px; width:100%; max-width:400px;
+}
+.admin-layout { display:flex; min-height:100vh; }
+
+/* LOG FEED */
+.log-feed { display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; }
+.log-entry {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:8px 10px; background:var(--bg3); border-radius:6px;
+  font-size:12px; font-family:monospace;
+}
+.log-time { color:var(--text3); flex-shrink:0; }
+.log-level { flex-shrink:0; font-weight:700; }
+.log-level.info  { color:var(--blue); }
+.log-level.success { color:var(--green); }
+.log-level.warn  { color:#e6a03a; }
+.log-level.error { color:var(--red); }
+.log-msg { color:var(--text2); }
+
+/* QUEUE */
+.queue-item {
+  background:var(--bg2); border:1px solid var(--gold-line);
+  border-radius:var(--radius); padding:16px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.queue-book-icon { font-size:1.8rem; flex-shrink:0; }
+.queue-info { flex:1; min-width:160px; }
+.queue-title { font-weight:700; font-size:14px; margin-bottom:2px; }
+.queue-meta  { font-size:12px; color:var(--text2); }
+.queue-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* AUTHOR ROW */
+.author-row td:first-child { font-weight:600; color:var(--text); }
+.revenue-chart { display:flex; align-items:flex-end; gap:6px; height:80px; padding-top:8px; }
+.rev-bar { flex:1; background:var(--gold-dim); border:1px solid var(--gold-line); border-radius:4px 4px 0 0; min-height:4px; position:relative; cursor:pointer; transition:background 0.2s; }
+.rev-bar:hover { background:var(--gold); }
+.rev-bar-label { position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--text3); white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ADMIN LOGIN GATE -->
+<div id="adminLoginScreen" class="admin-login">
+  <div class="admin-login-box">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:48px;height:48px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;color:#07080f;font-size:1.4rem;margin:0 auto 12px">L</div>
+      <h2 style="font-size:1.6rem;margin-bottom:4px">Admin Panel</h2>
+      <p style="color:var(--text2);font-size:13px">Luminay Technicals · Control Panel</p>
+    </div>
+    <div id="adminLoginError" style="display:none;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.2);color:var(--red);font-size:13px;padding:10px 14px;border-radius:8px;margin-bottom:16px"></div>
+    <div style="margin-bottom:14px">
+      <label class="lt-label">Admin Email</label>
+      <input class="lt-input" type="email" id="adminEmail" placeholder="admin@luminay.com" value="admin@luminay.com"/>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="lt-label">Password</label>
+      <input class="lt-input" type="password" id="adminPass" placeholder="admin123" value="admin123"/>
+    </div>
+    <button class="lt-btn lt-btn-gold" style="width:100%;justify-content:center" onclick="adminLogin()">Sign In to Admin</button>
+    <div style="text-align:center;margin-top:16px"><a href="index.html" style="font-size:12px;color:var(--text3)">← Back to site</a></div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="adminDashboard" style="display:none">
+<div class="admin-layout">
+
+<!-- SIDEBAR -->
+<aside class="lt-sidebar" id="adminSidebar">
+  <div class="lt-sidebar-logo">
+    <div class="lt-sidebar-logo-mark">L</div>
+    <div class="lt-sidebar-logo-name">Admin Panel</div>
+    <div class="lt-sidebar-logo-sub">Luminay Technicals</div>
+  </div>
+  <nav class="lt-sidebar-nav">
+    <div class="lt-sidebar-section">Dashboard</div>
+    <button class="lt-nav-item active" onclick="adminPage('overview')"><span class="nav-icon">📊</span> Overview</button>
+    <button class="lt-nav-item" onclick="adminPage('queue')"><span class="nav-icon">📬</span> Publishing Queue <span id="queueBadge" style="margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:50px;font-weight:700"></span></button>
+    <button class="lt-nav-item" onclick="adminPage('books')"><span class="nav-icon">📚</span> All Books</button>
+    <button class="lt-nav-item" onclick="adminPage('authors')"><span class="nav-icon">👥</span> Authors</button>
+    <div class="lt-sidebar-section" style="margin-top:12px">System</div>
+    <button class="lt-nav-item" onclick="adminPage('revenue')"><span class="nav-icon">💰</span> Revenue</button>
+    <button class="lt-nav-item" onclick="adminPage('logs')"><span class="nav-icon">🔍</span> System Logs</button>
+    <button class="lt-nav-item" onclick="adminPage('settings')"><span class="nav-icon">⚙️</span> Settings</button>
+  </nav>
+  <div class="lt-sidebar-footer">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Signed in as Admin</div>
+    <button class="lt-btn lt-btn-ghost lt-btn-sm" style="width:100%;justify-content:center" onclick="adminLogout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="lt-main">
+  <div class="lt-topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="adminTopbarTitle" style="font-weight:700;font-size:14px">Overview</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:var(--text3)" id="adminClock"></span>
+      <div style="width:30px;height:30px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">A</div>
+    </div>
+  </div>
+
+  <div class="lt-page">
+
+    <!-- OVERVIEW -->
+    <div id="ap-overview">
+      <h1 class="lt-page-title">Dashboard Overview</h1>
+      <p class="lt-page-sub">Real-time snapshot of the platform</p>
+      <div class="lt-grid-4" style="margin-bottom:24px" id="adminStats"></div>
+      <div class="lt-grid-2" style="gap:20px">
+        <div class="lt-card">
+          <h3 style="font-size:1rem;margin-bottom:14px">📬 Pending Queue</h3>
+          <div id="overviewQueue" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="lt-card">
+          <h3 style="font-size:1rem;margin-bottom:14px">🔍 Live Log Feed</h3>
+          <div class="log-feed" id="overviewLogs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUBLISHING QUEUE -->
+    <div id="ap-queue" style="display:none">
+      <h1 class="lt-page-title">Publishing Queue</h1>
+      <p class="lt-page-sub">Books waiting for review and approval</p>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <select class="lt-select" style="width:auto;font-size:12px;padding:8px 14px" onchange="filterQueue(this.value)">
+          <option value="pending">Pending Review</option>
+          <option value="review">In Review</option>
+          <option value="all">All Books</option>
+        </select>
+        <button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="refreshData()">↻ Refresh</button>
+      </div>
+      <div id="queueList" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- ALL BOOKS -->
+    <div id="ap-books" style="display:none">
+      <h1 class="lt-page-title">All Books</h1>
+      <p class="lt-page-sub">Complete book registry with LT IDs</p>
+      <div style="overflow-x:auto">
+        <table class="lt-table" id="allBooksTable">
+          <thead>
+            <tr>
+              <th>LT Book ID</th><th>Title</th><th>Author</th>
+              <th>Genre</th><th>Platform</th><th>Status</th>
+              <th>Submitted</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="allBooksTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AUTHORS -->
+    <div id="ap-authors" style="display:none">
+      <h1 class="lt-page-title">Authors</h1>
+      <p class="lt-page-sub">All registered authors and their accounts</p>
+      <div style="overflow-x:auto">
+        <table class="lt-table">
+          <thead>
+            <tr>
+              <th>Author ID</th><th>Name</th><th>Email</th>
+              <th>Plan</th><th>Books</th><th>Joined</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="authorsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REVENUE -->
+    <div id="ap-revenue" style="display:none">
+      <h1 class="lt-page-title">Revenue</h1>
+      <p class="lt-page-sub">Platform revenue from plan subscriptions</p>
+      <div class="lt-grid-3" style="margin-bottom:28px" id="revenueStats"></div>
+      <div class="lt-card">
+        <h3 style="font-size:1rem;margin-bottom:20px">Monthly Revenue (Simulated)</h3>
+        <div class="revenue-chart" id="revenueChart"></div>
+        <div style="height:20px"></div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="ap-logs" style="display:none">
+      <h1 class="lt-page-title">System Logs</h1>
+      <p class="lt-page-sub">All platform activity timestamped</p>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <select class="lt-select" style="width:auto;font-size:12px;padding:8px 14px" onchange="filterLogs(this.value)">
+          <option value="all">All Levels</option>
+          <option value="info">Info</option>
+          <option value="success">Success</option>
+          <option value="warn">Warning</option>
+          <option value="error">Error</option>
+        </select>
+        <button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="clearLogs()">Clear Logs</button>
+        <button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="addLog('info','Manual refresh triggered by admin')">Add Test Log</button>
+      </div>
+      <div style="background:var(--bg3);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:16px">
+        <div class="log-feed" style="max-height:500px" id="fullLogs"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="ap-settings" style="display:none">
+      <h1 class="lt-page-title">Settings</h1>
+      <p class="lt-page-sub">Platform configuration — powered by config.js</p>
+      <div class="lt-card" style="max-width:600px">
+        <h3 style="font-size:1rem;margin-bottom:16px">Company Info</h3>
+        <div style="display:grid;gap:12px">
+          <div><label class="lt-label">Company Name</label><input class="lt-input" id="setCompany" /></div>
+          <div><label class="lt-label">Support Email</label><input class="lt-input" id="setEmail" /></div>
+          <div><label class="lt-label">Founder Name</label><input class="lt-input" id="setFounder" /></div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:var(--radius)">
+          <p style="font-size:12px;color:var(--text3)">ℹ️ To permanently update site content, edit <code style="color:var(--gold)">config.js</code> — all pages read from it automatically.</p>
+        </div>
+        <button class="lt-btn lt-btn-gold lt-btn-sm" style="margin-top:16px" onclick="showToast('Settings saved!','success')">Save Changes</button>
+      </div>
+    </div>
+
+  </div><!-- /lt-page -->
+</div><!-- /lt-main -->
+</div><!-- /admin-layout -->
+</div><!-- /adminDashboard -->
+
+<script src="config.js"></script>
+<script>
+// ── ADMIN AUTH
+const ADMIN_CREDS = { email: 'admin@luminay.com', password: 'admin123' };
+let logs = JSON.parse(localStorage.getItem('lt_logs') || '[]');
+
+function adminLogin() {
+  const email = document.getElementById('adminEmail').value.trim();
+  const pass  = document.getElementById('adminPass').value;
+  if (email === ADMIN_CREDS.email && pass === ADMIN_CREDS.password) {
+    document.getElementById('adminLoginScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    addLog('success', `Admin signed in from ${email}`);
+    initAdmin();
+  } else {
+    const el = document.getElementById('adminLoginError');
+    el.textContent = 'Invalid credentials.'; el.style.display = 'block';
+  }
+}
+function adminLogout() {
+  document.getElementById('adminDashboard').style.display = 'none';
+  document.getElementById('adminLoginScreen').style.display = 'flex';
+}
+
+// Check if coming from auth redirect
+window.addEventListener('load', () => {
+  const from = new URLSearchParams(window.location.search).get('from');
+  if (from === 'auth') adminLogin();
+  // Auto-init if already has session (demo)
+  document.getElementById('adminEmail').value = 'admin@luminay.com';
+  document.getElementById('adminPass').value = 'admin123';
+  // Clock
+  setInterval(() => {
+    document.getElementById('adminClock').textContent = new Date().toLocaleTimeString('en-IN');
+  }, 1000);
+});
+
+// ── ADMIN INIT
+function initAdmin() {
+  seedDemoDataIfEmpty();
+  renderAdminStats();
+  renderOverviewQueue();
+  renderOverviewLogs();
+  renderQueueBadge();
+  loadSettings();
+  addLog('info', 'Admin dashboard loaded');
+}
+
+function seedDemoDataIfEmpty() {
+  // Seed demo books if none
+  const existing = JSON.parse(localStorage.getItem('lt_admin_books') || '[]');
+  if (existing.length === 0) {
+    const demo = [
+      { id:'LT-BOOK-0001', authorId:'LT-AUTH-0001', authorName:'Priya Sharma', title:'The Monsoon Letters', genre:'Fiction', language:'English', platform:'Amazon Kindle', status:'pending', createdAt: new Date(Date.now()-86400000*2).toISOString(), isbn:'ISBN-001' },
+      { id:'LT-BOOK-0002', authorId:'LT-AUTH-0002', authorName:'Rahul Gupta', title:'Startup Sutra', genre:'Business', language:'English', platform:'Google Play Books', status:'review', createdAt: new Date(Date.now()-86400000*5).toISOString(), isbn:'ISBN-002' },
+      { id:'LT-BOOK-0003', authorId:'LT-AUTH-0001', authorName:'Priya Sharma', title:'City of Silence', genre:'Mystery / Thriller', language:'English', platform:'All Platforms', status:'live', createdAt: new Date(Date.now()-86400000*30).toISOString(), isbn:'ISBN-003' },
+      { id:'LT-BOOK-0004', authorId:'LT-AUTH-0003', authorName:'Aditya Nair', title:'Kuch Lamhe', genre:'Poetry', language:'Hindi', platform:'PDF / ePub', status:'pending', createdAt: new Date(Date.now()-86400000).toISOString(), isbn:'ISBN-004' },
+      { id:'LT-BOOK-0005', authorId:'LT-AUTH-0004', authorName:'Sneha Patel', title:'Mindful Mornings', genre:'Self-Help', language:'English', platform:'Amazon Hardcopy', status:'live', createdAt: new Date(Date.now()-86400000*15).toISOString(), isbn:'ISBN-005' },
+    ];
+    localStorage.setItem('lt_admin_books', JSON.stringify(demo));
+  }
+  const existingUsers = JSON.parse(localStorage.getItem('lt_users') || '[]');
+  if (existingUsers.length === 0) {
+    const demoUsers = [
+      { id:'LT-AUTH-0001', firstName:'Priya', lastName:'Sharma', email:'priya@example.com', plan:'kindle', planName:'Amazon Kindle', planPrice:79, joined:new Date(Date.now()-86400000*30).toISOString(), status:'active' },
+      { id:'LT-AUTH-0002', firstName:'Rahul', lastName:'Gupta', email:'rahul@example.com', plan:'gplay', planName:'Google Play', planPrice:49, joined:new Date(Date.now()-86400000*20).toISOString(), status:'active' },
+      { id:'LT-AUTH-0003', firstName:'Aditya', lastName:'Nair', email:'aditya@example.com', plan:'starter', planName:'Starter', planPrice:99, joined:new Date(Date.now()-86400000*10).toISOString(), status:'active' },
+      { id:'LT-AUTH-0004', firstName:'Sneha', lastName:'Patel', email:'sneha@example.com', plan:'hardcopy', planName:'Hardcopy', planPrice:149, joined:new Date(Date.now()-86400000*40).toISOString(), status:'active' },
+    ];
+    localStorage.setItem('lt_users', JSON.stringify(demoUsers));
+  }
+  if (logs.length === 0) {
+    addLog('info', 'Platform initialized');
+    addLog('success', 'LT-BOOK-0005 published to Amazon Hardcopy');
+    addLog('success', 'LT-BOOK-0003 published to all platforms');
+    addLog('info', 'Author LT-AUTH-0004 registered on Hardcopy plan');
+    addLog('warn', 'LT-BOOK-0002 pending review for 5 days');
+    addLog('info', 'New book submission: LT-BOOK-0004');
+    addLog('info', 'New book submission: LT-BOOK-0001');
+  }
+}
+
+function getAllBooks()  { return JSON.parse(localStorage.getItem('lt_admin_books') || '[]'); }
+function getAllUsers()  { return JSON.parse(localStorage.getItem('lt_users') || '[]'); }
+function saveAllBooks(b) { localStorage.setItem('lt_admin_books', JSON.stringify(b)); }
+
+// ── NAVIGATION
+function adminPage(page) {
+  document.querySelectorAll('[id^="ap-"]').forEach(el => el.style.display = 'none');
+  document.getElementById(`ap-${page}`).style.display = 'block';
+  document.querySelectorAll('.lt-nav-item').forEach(el => el.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  const titles = { overview:'Overview', queue:'Publishing Queue', books:'All Books', authors:'Authors', revenue:'Revenue', logs:'System Logs', settings:'Settings' };
+  document.getElementById('adminTopbarTitle').textContent = titles[page] || page;
+  if (page === 'books')   renderAllBooks();
+  if (page === 'authors') renderAuthors();
+  if (page === 'queue')   renderQueue();
+  if (page === 'revenue') renderRevenue();
+  if (page === 'logs')    renderFullLogs();
+}
+
+function refreshData() { initAdmin(); showToast('Data refreshed', 'success'); }
+
+// ── STATS
+function renderAdminStats() {
+  const books   = getAllBooks();
+  const users   = getAllUsers();
+  const pending = books.filter(b => b.status === 'pending' || b.status === 'review').length;
+  const live    = books.filter(b => b.status === 'live').length;
+  const revenue = users.reduce((sum, u) => sum + (u.planPrice || 0), 0);
+  document.getElementById('adminStats').innerHTML = [
+    { label:'Total Authors', num: users.length, change:'Active accounts', color:'' },
+    { label:'Total Books',   num: books.length, change:'All submissions', color:'' },
+    { label:'Live Books',    num: live,          change:'Published', color:'var(--green)' },
+    { label:'MRR (INR)',     num: `₹${revenue}`, change:'Monthly revenue', color:'var(--gold)' },
+  ].map(s => `
+    <div class="lt-stat-card">
+      <div class="lt-stat-label">${s.label}</div>
+      <div class="lt-stat-num" style="color:${s.color||'var(--text)'}">${s.num}</div>
+      <div class="lt-stat-change">${s.change}</div>
+    </div>
+  `).join('');
+}
+
+function renderQueueBadge() {
+  const n = getAllBooks().filter(b => b.status === 'pending').length;
+  document.getElementById('queueBadge').textContent = n || '';
+}
+
+// ── QUEUE
+function renderQueue(filter = 'pending') {
+  const books = getAllBooks().filter(b => filter === 'all' ? true : b.status === filter);
+  const el = document.getElementById('queueList');
+  if (!books.length) { el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">No books in this queue 🎉</div>`; return; }
+  el.innerHTML = books.map(b => `
+    <div class="queue-item">
+      <div class="queue-book-icon">📖</div>
+      <div class="queue-info">
+        <div class="queue-title">${b.title}</div>
+        <div class="queue-meta">${b.id} · ${b.authorName} · ${b.genre} · ${b.platform}</div>
+        <div style="margin-top:4px"><span class="lt-status lt-status-${b.status}">${b.status}</span> <span style="font-size:11px;color:var(--text3);margin-left:8px">Submitted ${new Date(b.createdAt).toLocaleDateString('en-IN')}</span></div>
+      </div>
+      <div class="queue-actions">
+        ${b.status === 'pending' ? `<button class="lt-btn lt-btn-ghost lt-btn-sm" onclick="setBookStatus('${b.id}','review')">→ Mark In Review</button>` : ''}
+        ${b.status !== 'live' && b.status !== 'rejected' ? `<button class="lt-btn lt-btn-success lt-btn-sm" onclick="setBookStatus('${b.id}','live')">✓ Approve & Publish</button>` : ''}
+        ${b.status !== 'rejected' && b.status !== 'live' ? `<button class="lt-btn lt-btn-danger lt-btn-sm" onclick="setBookStatus('${b.id}','rejected')">✕ Reject</button>` : ''}
+        ${b.status === 'live' ? `<span class="lt-status lt-status-live">Live ✓</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+function filterQueue(val) { renderQueue(val); }
+
+function setBookStatus(id, status) {
+  const books = getAllBooks();
+  const b = books.find(x => x.id === id);
+  if (!b) return;
+  b.status = status;
+  saveAllBooks(books);
+  addLog(status === 'live' ? 'success' : status === 'rejected' ? 'error' : 'info',
+    `${b.id} "${b.title}" → ${status} by admin`);
+  renderQueue(); renderAdminStats(); renderQueueBadge();
+  renderOverviewQueue(); renderOverviewLogs();
+  showToast(`Book ${status === 'live' ? 'published!' : status === 'rejected' ? 'rejected.' : 'moved to review.'}`, status === 'live' ? 'success' : 'info');
+}
+
+function renderOverviewQueue() {
+  const pending = getAllBooks().filter(b => b.status === 'pending').slice(0,3);
+  const el = document.getElementById('overviewQueue');
+  if (!pending.length) { el.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:12px;text-align:center">No pending books 🎉</div>`; return; }
+  el.innerHTML = pending.map(b => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg3);border-radius:var(--radius)">
+      <span style="font-size:1.2rem">📖</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.title}</div>
+        <div style="font-size:11px;color:var(--text3)">${b.authorName} · ${b.id}</div>
+      </div>
+      <button class="lt-btn lt-btn-success lt-btn-sm" onclick="setBookStatus('${b.id}','live');adminPage('queue')">Approve</button>
+    </div>
+  `).join('');
+}
+
+// ── ALL BOOKS
+function renderAllBooks() {
+  const books = getAllBooks();
+  document.getElementById('allBooksTbody').innerHTML = books.map(b => `
+    <tr>
+      <td style="font-family:monospace;font-size:12px;color:var(--gold)">${b.id}</td>
+      <td style="color:var(--text);font-weight:600">${b.title}</td>
+      <td>${b.authorName}</td>
+      <td>${b.genre}</td>
+      <td>${b.platform}</td>
+      <td><span class="lt-status lt-status-${b.status}">${b.status}</span></td>
+      <td>${new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          ${b.status !== 'live' ? `<button class="lt-btn lt-btn-success lt-btn-sm" onclick="setBookStatus('${b.id}','live')">Publish</button>` : `<span style="color:var(--green);font-size:12px">✓ Live</span>`}
+          ${b.status !== 'rejected' && b.status !== 'live' ? `<button class="lt-btn lt-btn-danger lt-btn-sm" onclick="setBookStatus('${b.id}','rejected')">Reject</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── AUTHORS
+function renderAuthors() {
+  const users = getAllUsers();
+  const books = getAllBooks();
+  document.getElementById('authorsTbody').innerHTML = users.map(u => {
+    const userBooks = books.filter(b => b.authorId === u.id);
+    const plan = LT_CONFIG.plans.find(p => p.id === u.plan) || {};
+    return `
+    <tr class="author-row">
+      <td style="font-family:monospace;font-size:12px;color:var(--gold)">${u.id}</td>
+      <td>${u.firstName} ${u.lastName}</td>
+      <td style="font-size:12px">${u.email}</td>
+      <td><span style="color:var(--gold);font-size:12px">${plan.name||u.plan} · ₹${plan.price||u.planPrice||0}/mo</span></td>
+      <td>${userBooks.length}</td>
+      <td style="font-size:12px;color:var(--text3)">${new Date(u.joined).toLocaleDateString('en-IN')}</td>
+      <td><span class="lt-status lt-status-live">${u.status||'active'}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No authors yet</td></tr>';
+}
+
+// ── REVENUE
+function renderRevenue() {
+  const users = getAllUsers();
+  const mrr   = users.reduce((s,u) => s + (u.planPrice || LT_CONFIG.plans.find(p=>p.id===u.plan)?.price || 0), 0);
+  document.getElementById('revenueStats').innerHTML = [
+    { label:'Monthly Recurring Revenue', num:`₹${mrr}`, change:'Active subscriptions' },
+    { label:'Active Authors', num:users.length, change:'Paying subscribers' },
+    { label:'Projected Annual', num:`₹${mrr*12}`, change:'ARR estimate' },
+  ].map(s => `
+    <div class="lt-stat-card">
+      <div class="lt-stat-label">${s.label}</div>
+      <div class="lt-stat-num" style="color:var(--gold)">${s.num}</div>
+      <div class="lt-stat-change">${s.change}</div>
+    </div>
+  `).join('');
+
+  // Simple chart
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const values = months.map((_,i) => Math.max(20, Math.round(mrr * (0.4 + Math.random()*0.8))));
+  const maxV = Math.max(...values);
+  document.getElementById('revenueChart').innerHTML = months.map((m,i) => `
+    <div class="rev-bar" style="height:${Math.round((values[i]/maxV)*100)>0?Math.round((values[i]/maxV)*100):4}%" title="₹${values[i]}">
+      <div class="rev-bar-label">${m}</div>
+    </div>
+  `).join('');
+}
+
+// ── LOGS
+function addLog(level, msg) {
+  const entry = { time: new Date().toISOString(), level, msg };
+  logs.unshift(entry);
+  if (logs.length > 200) logs = logs.slice(0,200);
+  localStorage.setItem('lt_logs', JSON.stringify(logs));
+  renderOverviewLogs();
+}
+function renderLogEntry(l) {
+  return `<div class="log-entry">
+    <span class="log-time">${new Date(l.time).toLocaleTimeString('en-IN')}</span>
+    <span class="log-level ${l.level}">[${l.level.toUpperCase()}]</span>
+    <span class="log-msg">${l.msg}</span>
+  </div>`;
+}
+function renderOverviewLogs() {
+  const el = document.getElementById('overviewLogs');
+  if (el) el.innerHTML = logs.slice(0,8).map(renderLogEntry).join('');
+}
+function renderFullLogs(filter = 'all') {
+  const filtered = filter === 'all' ? logs : logs.filter(l => l.level === filter);
+  document.getElementById('fullLogs').innerHTML = filtered.map(renderLogEntry).join('') || '<div style="color:var(--text3);font-size:13px;padding:16px">No logs found</div>';
+}
+function filterLogs(val) { renderFullLogs(val); }
+function clearLogs() {
+  if (!confirm('Clear all logs?')) return;
+  logs = []; localStorage.setItem('lt_logs','[]');
+  renderFullLogs(); renderOverviewLogs();
+  showToast('Logs cleared','success');
+}
+
+// ── SETTINGS
+function loadSettings() {
+  document.getElementById('setCompany').value = LT_CONFIG.company.name;
+  document.getElementById('setEmail').value   = LT_CONFIG.company.email;
+  document.getElementById('setFounder').value = LT_CONFIG.founder.name;
+}
+
+// ── TOAST
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `lt-toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':'ℹ'}</span> ${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('adminLoginScreen').style.display !== 'none') adminLogin();
+});
+</script>
+</body>
+</html>

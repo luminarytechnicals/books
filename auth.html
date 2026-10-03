@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — Luminay Technicals</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+body { display:flex; min-height:100vh; }
+.auth-left {
+  width: 420px; flex-shrink: 0;
+  background: var(--bg2); border-right: 1px solid var(--gold-line);
+  display: flex; flex-direction: column; padding: 40px;
+  position: relative; overflow: hidden;
+}
+.auth-left::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 30% 60%, rgba(200,168,75,0.07), transparent 70%);
+  pointer-events:none;
+}
+.auth-left-logo { display:flex; align-items:center; gap:10px; margin-bottom:auto; position:relative; z-index:1; }
+.auth-left-mark {
+  width:36px; height:36px; background:var(--gold); border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Cormorant Garamond',serif; font-weight:700; color:#07080f; font-size:1.1rem;
+}
+.auth-left-name { font-size:14px; font-weight:700; }
+.auth-left-name span { color:var(--gold); }
+.auth-left-content { position:relative; z-index:1; }
+.auth-left-quote {
+  font-family:'Cormorant Garamond',serif; font-style:italic;
+  font-size:1.6rem; line-height:1.4; color:var(--text); margin-bottom:24px;
+}
+.auth-left-quote em { color:var(--gold); font-style:normal; }
+.auth-left-sub { color:var(--text2); font-size:13px; line-height:1.7; margin-bottom:32px; }
+.auth-left-stats { display:flex; gap:32px; }
+.auth-stat-num { font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:700; color:var(--gold); }
+.auth-stat-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; }
+.auth-left-footer { position:relative; z-index:1; font-size:12px; color:var(--text3); }
+
+.auth-right {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding: 40px 24px;
+}
+.auth-box { width:100%; max-width:440px; }
+.auth-tabs {
+  display:flex; gap:0; background:var(--bg2); border:1px solid var(--gold-line);
+  border-radius:10px; padding:4px; margin-bottom:32px;
+}
+.auth-tab {
+  flex:1; padding:9px; border-radius:7px; border:none; background:none;
+  color:var(--text2); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;
+  font-family:'Syne',sans-serif;
+}
+.auth-tab.active { background:var(--gold); color:#07080f; }
+
+.auth-title { font-size:2rem; margin-bottom:6px; }
+.auth-sub { color:var(--text2); font-size:13px; margin-bottom:28px; }
+
+.form-group { margin-bottom:16px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.input-wrap { position:relative; }
+.input-icon {
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  color:var(--text3); font-size:14px; pointer-events:none;
+}
+.lt-input.has-icon { padding-left:36px; }
+.input-toggle {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px;
+}
+
+.auth-divider {
+  display:flex; align-items:center; gap:12px;
+  color:var(--text3); font-size:12px; margin:20px 0;
+}
+.auth-divider::before, .auth-divider::after {
+  content:''; flex:1; height:1px; background:rgba(255,255,255,0.06);
+}
+
+.plan-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.plan-opt {
+  background:var(--bg3); border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px; padding:10px 8px; text-align:center; cursor:pointer; transition:all 0.2s;
+}
+.plan-opt:hover { border-color:var(--gold-line); }
+.plan-opt.selected { border-color:var(--gold); background:var(--gold-dim); }
+.plan-opt-icon { font-size:1.1rem; }
+.plan-opt-name { font-size:11px; font-weight:700; margin-top:4px; }
+.plan-opt-price { font-size:11px; color:var(--gold); }
+
+.auth-footer-link { text-align:center; font-size:13px; color:var(--text2); margin-top:20px; }
+.auth-footer-link a { color:var(--gold); font-weight:600; }
+
+.auth-error {
+  background:rgba(224,92,92,0.1); border:1px solid rgba(224,92,92,0.2);
+  color:var(--red); font-size:13px; padding:10px 14px; border-radius:8px;
+  margin-bottom:16px; display:none;
+}
+.auth-success {
+  background:rgba(78,201,138,0.1); border:1px solid rgba(78,201,138,0.2);
+  color:var(--green); font-size:13px; padding:10px 14px; border-radius:8px;
+  margin-bottom:16px; display:none;
+}
+
+.spinner {
+  width:16px; height:16px; border:2px solid rgba(0,0,0,0.2);
+  border-top-color:#07080f; border-radius:50%;
+  animation:spin 0.7s linear infinite; display:none;
+}
+
+@media(max-width:860px) {
+  .auth-left { display:none; }
+}
+@media(max-width:480px) {
+  .form-row { grid-template-columns:1fr; }
+  .plan-selector { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div class="auth-left">
+  <div class="auth-left-logo">
+    <div class="auth-left-mark">L</div>
+    <div class="auth-left-name">Luminay <span>Books</span></div>
+  </div>
+  <div class="auth-left-content">
+    <p class="auth-left-quote">"Every author deserves to see their words <em>in print</em>."</p>
+    <p class="auth-left-sub">Join hundreds of Indian authors who publish professionally on Amazon, Google Play, and in print — all through one simple platform.</p>
+    <div class="auth-left-stats">
+      <div><div class="auth-stat-num">500+</div><div class="auth-stat-label">Authors</div></div>
+      <div><div class="auth-stat-num">4</div><div class="auth-stat-label">Platforms</div></div>
+      <div><div class="auth-stat-num">₹49</div><div class="auth-stat-label">Starting</div></div>
+    </div>
+  </div>
+  <div class="auth-left-footer">© 2024–2026 Luminay Technicals · luminarytechnicals@gmail.com</div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="auth-right">
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Create Account</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-sub">Sign in to your author dashboard</p>
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-success" id="loginSuccess"></div>
+      <div class="form-group">
+        <label class="lt-label">Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉</span>
+          <input class="lt-input has-icon" type="email" id="loginEmail" placeholder="your@email.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lt-label">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="lt-input has-icon" type="password" id="loginPass" placeholder="Your password"/>
+          <button class="input-toggle" onclick="togglePass('loginPass',this)">👁</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+        <a href="#" style="font-size:12px;color:var(--gold)">Forgot password?</a>
+      </div>
+      <button class="lt-btn lt-btn-gold" style="width:100%;justify-content:center;gap:10px" onclick="handleLogin()">
+        <span>Sign In</span><div class="spinner" id="loginSpinner"></div>
+      </button>
+      <div style="margin:20px 0;text-align:center">
+        <a href="dashboard.html" style="font-size:12px;color:var(--text3)">→ Admin? <span style="color:var(--gold)">Go to Admin Panel</span></a>
+      </div>
+      <div class="auth-footer-link">Don't have an account? <a href="#" onclick="switchTab('register')">Create one free</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" style="display:none">
+      <h2 class="auth-title">Start publishing</h2>
+      <p class="auth-sub">Create your author account in seconds</p>
+      <div class="auth-error" id="regError"></div>
+      <div class="auth-success" id="regSuccess"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="lt-label">First Name</label>
+          <input class="lt-input" type="text" id="regFirst" placeholder="Arjun"/>
+        </div>
+        <div class="form-group">
+          <label class="lt-label">Last Name</label>
+          <input class="lt-input" type="text" id="regLast" placeholder="Sharma"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lt-label">Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉</span>
+          <input class="lt-input has-icon" type="email" id="regEmail" placeholder="your@email.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lt-label">Phone Number</label>
+        <div class="input-wrap">
+          <span class="input-icon">📞</span>
+          <input class="lt-input has-icon" type="tel" id="regPhone" placeholder="+91 98765 43210"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lt-label">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="lt-input has-icon" type="password" id="regPass" placeholder="Min 8 characters"/>
+          <button class="input-toggle" onclick="togglePass('regPass',this)">👁</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lt-label">Select Publishing Plan</label>
+        <div class="plan-selector" id="planSelector"></div>
+      </div>
+      <button class="lt-btn lt-btn-gold" style="width:100%;justify-content:center;gap:10px" onclick="handleRegister()">
+        <span>Create Account</span><div class="spinner" id="regSpinner"></div>
+      </button>
+      <div class="auth-footer-link">Already have an account? <a href="#" onclick="switchTab('login')">Sign in</a></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+// ── PLAN SELECTOR
+let selectedPlan = 'starter';
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('plan')) selectedPlan = urlParams.get('plan');
+if (urlParams.get('tab') === 'register') switchTab('register');
+
+function renderPlans() {
+  document.getElementById('planSelector').innerHTML = LT_CONFIG.plans.map(p => `
+    <div class="plan-opt ${p.id === selectedPlan ? 'selected' : ''}" onclick="selectPlan('${p.id}')">
+      <div class="plan-opt-icon">${p.icon}</div>
+      <div class="plan-opt-name">${p.name}</div>
+      <div class="plan-opt-price">₹${p.price}/mo</div>
+    </div>
+  `).join('');
+}
+function selectPlan(id) {
+  selectedPlan = id;
+  document.querySelectorAll('.plan-opt').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+renderPlans();
+
+// ── TABS
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+}
+
+// ── PASSWORD TOGGLE
+function togglePass(id, btn) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.textContent = input.type === 'password' ? '👁' : '🙈';
+}
+
+// ── MOCK AUTH (replace with real API calls)
+function showMsg(id, msg, type='error') {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+  el.className = type === 'error' ? 'auth-error' : 'auth-success';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+function setLoading(spinnerId, btnEl, loading) {
+  document.getElementById(spinnerId).style.display = loading ? 'inline-block' : 'none';
+}
+
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) return showMsg('loginError', 'Please fill in all fields.');
+
+  // Admin shortcut
+  if (email === 'admin@luminay.com' && pass === 'admin123') {
+    showMsg('loginSuccess', 'Redirecting to Admin Panel…', 'success');
+    setTimeout(() => window.location.href = 'admin.html', 1200);
+    return;
+  }
+
+  setLoading('loginSpinner', null, true);
+  // Simulate API
+  setTimeout(() => {
+    setLoading('loginSpinner', null, false);
+    // Get stored users
+    const users = JSON.parse(localStorage.getItem('lt_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === pass);
+    if (user) {
+      localStorage.setItem('lt_current_user', JSON.stringify(user));
+      showMsg('loginSuccess', `Welcome back, ${user.firstName}!`, 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 1000);
+    } else {
+      showMsg('loginError', 'Invalid email or password.');
+    }
+  }, 1000);
+}
+
+function handleRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last  = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const pass  = document.getElementById('regPass').value;
+  if (!first||!last||!email||!phone||!pass) return showMsg('regError','Please fill in all fields.');
+  if (pass.length < 8) return showMsg('regError','Password must be at least 8 characters.');
+
+  setLoading('regSpinner', null, true);
+  setTimeout(() => {
+    setLoading('regSpinner', null, false);
+    const users = JSON.parse(localStorage.getItem('lt_users') || '[]');
+    if (users.find(u => u.email === email)) return showMsg('regError','This email is already registered.');
+    const plan = LT_CONFIG.plans.find(p => p.id === selectedPlan);
+    const newUser = {
+      id: 'LT-AUTH-' + String(users.length + 1).padStart(4,'0'),
+      firstName: first, lastName: last, email, phone, password: pass,
+      plan: selectedPlan, planName: plan.name, planPrice: plan.price,
+      joined: new Date().toISOString(), books: [], status: 'active'
+    };
+    users.push(newUser);
+    localStorage.setItem('lt_users', JSON.stringify(users));
+    localStorage.setItem('lt_current_user', JSON.stringify(newUser));
+    showMsg('regSuccess', `Account created! Welcome, ${first}!`, 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1200);
+  }, 1200);
+}
+
+// Handle Enter key
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('loginForm').style.display !== 'none') handleLogin();
+  else handleRegister();
+});
+</script>
+</body>
+</html>
